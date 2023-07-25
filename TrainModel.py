@@ -30,7 +30,6 @@ from sklearn.pipeline import make_pipeline
 
 # Define classifiers
 Knn = KNeighborsClassifier()
-Lr = LogisticRegression()
 Rf = RandomForestClassifier()
 Svm = SGDClassifier()
 Nb = MultinomialNB()
@@ -42,7 +41,7 @@ bow_vectorizer = CountVectorizer()
 # Assuming you have x_train, x_test, y_train, y_test data ready
 
 # Initialize classifiers and their names
-classifiers = [Knn, Lr, Rf, Svm, Nb]
+classifiers = [Knn, Rf, Svm, Nb]
 classifier_names = ['KNN', 'Logistic Regression', 'Random Forest', 'SVM', 'Naive Bayes']
 
 # Create a list to store accuracy scores
