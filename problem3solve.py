@@ -1,61 +1,91 @@
-# 载入必要库
-import jieba
-import numpy as np
-import pandas as pd
-import sklearn
-import matplotlib
-import matplotlib.pyplot as plt 
-import pyecharts.options as opts
-from pyecharts.charts import WordCloud
-from pyecharts.charts import Bar
-import re
-#logging
-import warnings
-warnings.filterwarnings('ignore')
-
-data = pd.read_excel('Appendix I.xlsx')
-
-# 移除含有缺失值的行
-data.dropna(axis=0,inplace=True)
-#查看去除缺失值后的行和列
-data.shape
-
-def remove_url(src):
-    # 去除标点符号、数字、字母
-    vTEXT = re.sub('[0-9’!"#$%&\'()*+,-./:;<=>?@，。?★、…【】╮ ￣ ▽ ￣ ╭\\～⊙％；①（）：《》？“”‘’！[\\]^_`{|}~\s]+', "", src)
-    return vTEXT
-
-
-cutted = []
-for row in data.values:
-        text = remove_url(str(row[0])) #去除文本中的标点符号、数字、字母
-        raw_words = (' '.join(jieba.cut(text)))#分词,并用空格进行分隔
-        cutted.append(raw_words)
-
-cutted_array = np.array(cutted)
-
-# 生成新数据文件，Comment字段为分词后的内容
-data_cutted = pd.DataFrame({
-    'Comment': cutted_array,
-    'Class': data['Class']
-})
-
-data_cutted.head()#查看分词后的数据集
-
 import nltk
-from nltk.stem import SnowballStemmer
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
+from nltk import pos_tag
+from nltk.corpus import wordnet
+
+import pandas as pd
+import re
+
+nltk.download('averaged_perceptron_tagger',download_dir='./stopwords_dir')
+nltk.download('stopwords',download_dir='./stopwords_dir')
+nltk.download('punkt',download_dir='./stopwords_dir')
+nltk.download('wordnet',download_dir='./stopwords_dir')
 
 nltk.data.path.append('./stopwords_dir')
-# extract stopwords
-stop_words = set(stopwords.words('english'))
-# 初始化WordNetLemmatizer
-lemmatizer = WordNetLemmatizer()
 
-for i in stop_words[:100]:#读前100个停用词
-    print(i,end='')
+wnl = WordNetLemmatizer()
+# USdict = enchant.Dict("en_US")
+stoplist = set(stopwords.words('english'))
+
+def remove_urls(vTEXT):
+    vTEXT = re.sub(r'(https|http)?:\/\/(\w|\.|\/|\?|\=|\&|\%)*\b', '', vTEXT, flags=re.MULTILINE)
+    return (vTEXT)
+
+
+def get_word(text):
+    text = text.replace('.', ' ')
+    rawwords = nltk.word_tokenize(text)
+    words = [word.lower() for word in rawwords if not str.isdigit(word) and len(word) > 2]
+    return words
+
+
+def get_pos_word(words):
+    def get_wordnet_pos(tag):
+        if tag.startswith('J'):
+            return wordnet.ADJ
+        elif tag.startswith('V'):
+            return wordnet.VERB
+        elif tag.startswith('N'):
+            return wordnet.NOUN
+        elif tag.startswith('R'):
+            return wordnet.ADV
+        else:
+            return None
+
+    words = pos_tag(words)
+
+    pos_word = [wnl.lemmatize(tag[0], pos=get_wordnet_pos(tag[1]) or wordnet.NOUN) for tag in words]
+
+    # 停用词过滤
+    cleanwords = [word for word in pos_word if word not in stoplist]
+
+    return cleanwords
+
+import json
+from collections import defaultdict
+
+if __name__ == '__main__':
+    filedata = pd.read_excel('Appendix I.xlsx')
+    # 读到所有的json数据中需要的部分
+    reviews = []
+    overalls = []
+    for index, row in filedata.iterrows():
+        json_data = row[0]  # 提取第一列的JSON字符串
+        data = json.loads(json_data)  # 解析JSON数据
+        reviews.append(data["reviewText"])  # 提取reviewText字段的内容
+        overalls.append(data["overall"])
+        
+    dataset = {'reviewText':reviews,'overall':overalls}
+    df = pd.DataFrame(dataset)
     
-#设定停用词文件,在统计关键词的时候，过滤停用词
-import jieba.analyse
-jieba.analyse.set_stop_words('./dataset/stopwords.txt')
+	#去除链接
+    df['reviewText'] = df['reviewText'].apply(remove_urls)
+	
+    # 分词
+    df['reviewText'] = df['reviewText'].apply(get_word)
+	
+    # 文本处理结果
+    df['reviewText'] = df['reviewText'].apply(get_pos_word)
+	
+    # 删除tweets中的空列表
+    df = df[~(df['reviewText'].str.len() == 0)]
+	
+    # 转换字符串
+    df['reviewText'] = df['reviewText'].apply(lambda x: ' '.join(x))
+	
+    # 打乱顺序
+    df = df.sample(frac=1.0).reset_index(drop=True)
+	
+	#保存文本
+    df.to_csv('DataForTrain.csv',encoding='utf-8')

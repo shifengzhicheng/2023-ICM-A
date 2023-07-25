@@ -1,73 +1,12 @@
-# 载入必要库
-import json
 import pandas as pd
 
-#读入数据集
-df = pd.read_excel('Appendix I.xlsx')
-
-review_texts = []
-
-overalls = []
-
-for index, row in df.iterrows():
-    json_data = row[0]  # 提取第一列的JSON字符串
-    data = json.loads(json_data)  # 解析JSON数据
-    review_texts.append(data["reviewText"])
-    overalls.append(data["overall"])
-
-import re
-import nltk
-from nltk.stem import SnowballStemmer
-from nltk.corpus import stopwords
-from nltk.stem import WordNetLemmatizer
-
-# nltk.download('stopwords',download_dir='./stopwords_dir')
-# nltk.download('punkt',download_dir='./stopwords_dir')
-# nltk.download('wordnet',download_dir='./stopwords_dir')
-
-nltk.data.path.append('./stopwords_dir')
-# extract stopwords
-stop_words = set(stopwords.words('english'))
-# 初始化WordNetLemmatizer
-# lemmatizer = WordNetLemmatizer()
-
-def preprocess_text(text):
-    # lower
-    text = text.lower()
-    # decompose
-    text = re.sub(r'[^\w\s]', '', text)
-    # split
-    words = nltk.word_tokenize(text)
-    
-    filtered_words = [word for word in words if word.isalpha() and word not in stop_words]
-    
-    # lemmatized_words = [lemmatizer.lemmatize(word) for word in filtered_words]
-
-    # reviews stem
-    stemmer = SnowballStemmer('english')
-    processed_words = [stemmer.stem(word) for word in filtered_words]
-    # recombined
-    processed_text = ' '.join(processed_words)
-    return processed_text
-
-processed_review_texts = []
-for review in review_texts:
-    processed_review_texts.append(preprocess_text(review))
+df = pd.read_csv("DataForTrain.csv", encoding='utf-8')
 
 # 在这里认为好评是5，中评是3，4，差评是1，2
 
-high_overalls_reviews = []
-medium_overalls_reviews = []
-low_overalls_reviews = []
-
-
-for review, overall in zip(processed_review_texts, overalls):
-    if overall in (1, 2):
-        low_overalls_reviews.append(review)
-    elif overall in (3,4):
-        medium_overalls_reviews.append(review)
-    elif overall == 5:
-        high_overalls_reviews.append(review)
+high_overalls_reviews = df.loc[df['overall'] == 5, 'reviewText'].tolist()
+medium_overalls_reviews = df.loc[df['overall'].isin([3, 4]), 'reviewText'].tolist()
+low_overalls_reviews = df.loc[df['overall'].isin([1, 2]), 'reviewText'].tolist()
 
 import matplotlib.pyplot as plt
 from wordcloud import WordCloud
