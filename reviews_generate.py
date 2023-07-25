@@ -2,7 +2,7 @@ import pandas as pd
 import json
 
 # 读取xlsx文件
-df = pd.read_excel("Appendix III.xlsx")  # 替换成附件中数据的路径
+df = pd.read_excel("Appendix I.xlsx")  # 替换成附件中数据的路径
 
 review_texts = []
 
