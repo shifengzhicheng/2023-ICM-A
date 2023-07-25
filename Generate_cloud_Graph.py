@@ -37,7 +37,7 @@ plt.ylabel('Frequencies')
 plt.title('Top 50 Words by Frequency')
 plt.xticks(rotation=90)  # 将x轴标签旋转90度，使得词汇能够显示完整
 plt.tight_layout()  # 调整布局，防止标签被截断
-plt.savefig('output/word_freq/word_freq_bar_chart_2.png', bbox_inches='tight')
+plt.savefig('output/word_freq/word_freq_bar_chart_3.png', bbox_inches='tight')
      
 from wordcloud import WordCloud
 
@@ -49,7 +49,7 @@ output_folder = "output/WordCloud"
 if not os.path.exists(output_folder):
     os.makedirs(output_folder)
 
-output_file_path = os.path.join(output_folder, "wordcloud_2.png")
+output_file_path = os.path.join(output_folder, "wordcloud_3.png")
 
 # 将单词云图保存为图像文件
 plt.figure(figsize=(10, 5))
